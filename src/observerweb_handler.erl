@@ -10,13 +10,19 @@
 -author("freecnpro@gmail.com").
 
 %% API
--export([init/2]).
+-export([init/3, handle/2, terminate/3]).
 
-init(Req, Opts) ->
-  Method = cowboy_req:method(Req),
-  HasBody = cowboy_req:has_body(Req),
-  Req2 = process(Method, HasBody, Req),
-  {ok, Req2, Opts}.
+init(_, Req, _Opts) ->
+  {ok, Req, no_state}.
+
+handle(Req, State) ->
+    {Method, Req2} = cowboy_req:method(Req),
+    HasBody = cowboy_req:has_body(Req2),
+    {ok, Req3} = process(Method, HasBody, Req2),
+    {ok, Req3, State}.
+
+terminate(_Reason, _Req, _State) ->
+    ok.
 
 process(<<"POST">>, false, Req) ->
   cowboy_req:reply(400, [], <<"Missing body.">>, Req);
@@ -55,7 +61,7 @@ process(<<"POST">>, true, Req) ->
     <<"del_node">> ->
       Node = proplists:get_value(<<"node">>, PostVals),
       del_node(Node),
-      Req2
+      {ok, Req2}
   end;
 process(_, _, Req) ->
   %% Method not allowed.
