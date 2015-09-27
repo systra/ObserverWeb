@@ -10,7 +10,28 @@
 -author("freecnpro@gmail.com").
 
 %% API
--export([try_rpc/4]).
+-export([start/0,
+         stop/0,
+         try_rpc/4]).
+
+-define(APP, ?MODULE).
+
+% For console start
+start() ->
+    start(?APP).
+
+start(App) ->
+    case application:start(App) of
+        ok -> ok;
+        {error, {not_started, Dependency}} ->
+            start(Dependency),
+            start(App);
+        _Error ->
+            init:stop()
+    end.
+
+stop() ->
+    application:stop(?APP).
 
 try_rpc(Node, Mod, Func, Args) ->
   case rpc:call(Node, Mod, Func, Args) of
